@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -278,37 +278,37 @@ function SearchResults() {
 // Problem: Using useState for timer ID when useRef should be used (doesn't need re-renders)
 function BookingTimer() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
-  const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null); // ❌ Should use useRef
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const startTimer = () => {
-    if (timerId) clearInterval(timerId);
+    if (timerRef.current) clearInterval(timerRef.current);
 
     const id = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(id);
-          setTimerId(null); // ❌ Unnecessary re-render
+          timerRef.current =null;
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    setTimerId(id); // ❌ Unnecessary re-render
+    timerRef.current = id;
   };
 
   const stopTimer = () => {
-    if (timerId) {
-      clearInterval(timerId);
-      setTimerId(null); // ❌ Unnecessary re-render
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   };
 
   useEffect(() => {
     return () => {
-      if (timerId) clearInterval(timerId);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [timerId]); // ❌ Effect runs every time timerId changes
+  }, []);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -356,17 +356,17 @@ function HotelGallery() {
     "hotel-pool.jpg",
     "hotel-restaurant.jpg",
   ]);
-  const [lastScrollPosition, setLastScrollPosition] = useState(0); // ❌ Should use useRef
+  const lastScrollPositionRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentPosition = window.scrollY;
 
       // We only need this for internal logic, not for rendering
-      setLastScrollPosition(currentPosition); // ❌ Causes unnecessary re-render
+      lastScrollPositionRef.current = currentPosition
 
       // Some scroll-based logic here...
-      if (currentPosition > lastScrollPosition) {
+      if (currentPosition > lastScrollPositionRef.current) {
         console.log("Scrolling down");
       } else {
         console.log("Scrolling up");
@@ -375,7 +375,7 @@ function HotelGallery() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollPosition]); // ❌ Effect re-runs on every scroll
+  }, []); // ❌ Effect re-runs on every scroll
 
   return (
     <Card>
@@ -398,7 +398,7 @@ function HotelGallery() {
           ))}
         </div>
         <div className="mt-4 text-muted-foreground text-xs">
-          Debug: Last scroll position: {lastScrollPosition}px
+          Debug: Last scroll position: {lastScrollPositionRef.current}px
         </div>
       </CardContent>
     </Card>
@@ -412,15 +412,15 @@ function FlightSearch() {
   const [searchResults, setSearchResults] = useState<
     Array<{ id: number; flight: string; price: number }>
   >([]);
-  const [searchCount, setSearchCount] = useState(0); // ❌ Should use useRef
-  const [lastSearchTime, setLastSearchTime] = useState<number | null>(null); // ❌ Should use useRef
+  const searchCountRef = useRef(0)
+  const lastSearchTimeRef = useRef<number | null>(null)
 
   const handleSearch = async () => {
     const now = Date.now();
 
     // Track search analytics (doesn't affect UI)
-    setSearchCount((prev) => prev + 1); // ❌ Unnecessary re-render
-    setLastSearchTime(now); // ❌ Unnecessary re-render
+    searchCountRef.current += 1
+    lastSearchTimeRef.current = now
 
     // Simulate API call
     setTimeout(() => {
@@ -431,7 +431,7 @@ function FlightSearch() {
     }, 1000);
 
     // Analytics logic that doesn't need to trigger re-renders
-    if (lastSearchTime && now - lastSearchTime < 1000) {
+    if (lastSearchTimeRef.current && now - lastSearchTimeRef.current < 1000) {
       console.log("User is searching too quickly");
     }
   };
@@ -472,7 +472,7 @@ function FlightSearch() {
         )}
 
         <div className="pt-2 border-t text-muted-foreground text-xs">
-          Debug: Search count: {searchCount}, Last search: {lastSearchTime}
+          Debug: Search count: {searchCountRef.current}, Last search: {lastSearchTimeRef.current}
         </div>
       </CardContent>
     </Card>
