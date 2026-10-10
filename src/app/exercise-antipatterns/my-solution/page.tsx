@@ -287,7 +287,7 @@ function BookingTimer() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(id);
-          timerRef.current =null;
+          timerRef.current = null;
           return 0;
         }
         return prev - 1;
@@ -363,7 +363,7 @@ function HotelGallery() {
       const currentPosition = window.scrollY;
 
       // We only need this for internal logic, not for rendering
-      lastScrollPositionRef.current = currentPosition
+      lastScrollPositionRef.current = currentPosition;
 
       // Some scroll-based logic here...
       if (currentPosition > lastScrollPositionRef.current) {
@@ -412,15 +412,15 @@ function FlightSearch() {
   const [searchResults, setSearchResults] = useState<
     Array<{ id: number; flight: string; price: number }>
   >([]);
-  const searchCountRef = useRef(0)
-  const lastSearchTimeRef = useRef<number | null>(null)
+  const searchCountRef = useRef(0);
+  const lastSearchTimeRef = useRef<number | null>(null);
 
   const handleSearch = async () => {
     const now = Date.now();
 
     // Track search analytics (doesn't affect UI)
-    searchCountRef.current += 1
-    lastSearchTimeRef.current = now
+    searchCountRef.current += 1;
+    lastSearchTimeRef.current = now;
 
     // Simulate API call
     setTimeout(() => {
@@ -472,7 +472,8 @@ function FlightSearch() {
         )}
 
         <div className="pt-2 border-t text-muted-foreground text-xs">
-          Debug: Search count: {searchCountRef.current}, Last search: {lastSearchTimeRef.current}
+          Debug: Search count: {searchCountRef.current}, Last search:{" "}
+          {lastSearchTimeRef.current}
         </div>
       </CardContent>
     </Card>
@@ -505,13 +506,13 @@ function HotelSelection() {
       amenities: ["WiFi", "Pool", "Beach Access"],
     },
   ]);
-  const [selectedHotel, setSelectedHotel] = useState<(typeof hotels)[0] | null>(
-    null,
-  ); // ❌ Storing entire object
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
 
-  const handleHotelSelect = (hotel: (typeof hotels)[0]) => {
-    setSelectedHotel(hotel); // ❌ Storing the entire hotel object instead of just the ID!
+  const handleHotelSelect = (hotelId: string) => {
+    setSelectedHotelId(hotelId);
   };
+
+  const selectedHotel = hotels.find((h) => h.id === selectedHotelId);
 
   return (
     <Card>
@@ -528,11 +529,11 @@ function HotelSelection() {
             <div
               key={hotel.id}
               className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                selectedHotel?.id === hotel.id
+                selectedHotelId === hotel.id
                   ? "border-primary bg-primary/5"
                   : "hover:bg-accent"
               }`}
-              onClick={() => handleHotelSelect(hotel)}
+              onClick={() => handleHotelSelect(hotel.id)}
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -595,20 +596,6 @@ function TravelPreferences() {
     },
   });
 
-  // ❌ Storing duplicate user data that's already available
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [userBudget, setUserBudget] = useState("");
-  const [userTravelStyle, setUserTravelStyle] = useState("");
-
-  // ❌ These effects are unnecessary - we already have this data!
-  useEffect(() => {
-    setUserName(userProfile.name); // ❌ Redundant state
-    setUserEmail(userProfile.email); // ❌ Redundant state
-    setUserBudget(userProfile.preferences.budget); // ❌ Redundant state
-    setUserTravelStyle(userProfile.preferences.travelStyle); // ❌ Redundant state
-  }, [userProfile]);
-
   return (
     <Card>
       <CardHeader>
@@ -646,16 +633,16 @@ function TravelPreferences() {
             </Label>
             <div className="space-y-1 mt-1 text-sm">
               <p>
-                <strong>Name:</strong> {userName}
+                <strong>Name:</strong> {userProfile.name}
               </p>
               <p>
-                <strong>Email:</strong> {userEmail}
+                <strong>Email:</strong> {userProfile.email}
               </p>
               <p>
-                <strong>Budget:</strong> {userBudget}
+                <strong>Budget:</strong> {userProfile.preferences.budget}
               </p>
               <p>
-                <strong>Style:</strong> {userTravelStyle}
+                <strong>Style:</strong> {userProfile.preferences.travelStyle}
               </p>
             </div>
           </div>
@@ -688,38 +675,28 @@ function BookingSummary() {
     taxes: 89,
   });
 
-  // ❌ Storing formatted versions when they can be derived
-  const [formattedDepartureDate, setFormattedDepartureDate] = useState("");
-  const [formattedReturnDate, setFormattedReturnDate] = useState("");
-  const [tripDuration, setTripDuration] = useState("");
-  const [totalFlightCost, setTotalFlightCost] = useState(0);
-  const [totalHotelCost, setTotalHotelCost] = useState(0);
-  const [grandTotal, setGrandTotal] = useState(0);
+  const depDate = new Date(bookingData.departureDate);
+  const retDate = new Date(bookingData.returnDate);
 
-  // ❌ All these effects are unnecessary - we can derive this data!
-  useEffect(() => {
-    const depDate = new Date(bookingData.departureDate);
-    const retDate = new Date(bookingData.returnDate);
+  const formattedDepartureDate = depDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const formattedReturnDate = retDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
-    setFormattedDepartureDate(
-      depDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    );
-    setFormattedReturnDate(
-      retDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    );
+  const diffTime = retDate.getTime() - depDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const tripDuration = `${diffDays} days`;
 
-    const diffTime = retDate.getTime() - depDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    setTripDuration(`${diffDays} days`);
-
-    setTotalFlightCost(bookingData.flightPrice * bookingData.passengers);
-    setTotalHotelCost(bookingData.hotelPrice * diffDays);
-    setGrandTotal(
-      bookingData.flightPrice * bookingData.passengers +
-        bookingData.hotelPrice * diffDays +
-        bookingData.taxes,
-    );
-  }, [bookingData]);
+  const totalFlightCost = bookingData.flightPrice * bookingData.passengers;
+  const totalHotelCost = bookingData.hotelPrice * diffDays;
+  const grandTotal =
+    bookingData.flightPrice * bookingData.passengers +
+    bookingData.hotelPrice * diffDays +
+    bookingData.taxes;
 
   return (
     <Card>
